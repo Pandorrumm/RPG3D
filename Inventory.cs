@@ -10,7 +10,7 @@ public class Inventory : MonoBehaviour
     List<Item> list;  //список для хранения предметов
     [SerializeField]
     private GameObject inventory;
-    private readonly string ITEM = "Item"; //тег героя нашего
+    private readonly string ITEM = "Item"; //тег предмета нашего
     [SerializeField]
     PlayerController player; //игрок, за которым охотятся враги
     public GameObject container; // Image клетки в инвентаре
@@ -18,6 +18,7 @@ public class Inventory : MonoBehaviour
     void Start()
     {
         list = new List<Item>();
+        player = GetComponent<PlayerController>();
     }
 
     void Update()
@@ -41,7 +42,7 @@ public class Inventory : MonoBehaviour
 
     public void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == ITEM)
+        if (other.gameObject.tag == ITEM /*&& inventory.transform.childCount <= 4*/)
         {
            
                 Item item = other.gameObject.GetComponent<Item>();
@@ -73,19 +74,79 @@ public class Inventory : MonoBehaviour
         {
             inventory.SetActive(true);
             int count = list.Count; // длина нашего списка
-            for(int i = 0; i< count; i++)
+            Debug.Log("длина инвенторя" + count);
+            for (int i = 0; i < count; i++)
             {
                 Item it = list[i];
 
                 if(inventory.transform.childCount >= i) //хватает ли ячеек
                 {
-                    GameObject img = Instantiate(container); //создаём изображение 
+                    Debug.Log("Сколько ячеек" + inventory.transform.childCount);
+
+                    GameObject img = Instantiate<GameObject>(container); //создаём изображение 
                     img.transform.SetParent(inventory.transform.GetChild(i).transform); // делаем изображение дочерним к ячейке
                     img.GetComponent<Image>().sprite = Resources.Load<Sprite>(it.sprite);
+
+                    //добавляем на ячейки компонент Button, что по нажатию можно было бы вернуть инвентарь обратно
+                    //img.AddComponent<Button>().onClick.AddListener(() => Remove(it, img));
+
+                    img.GetComponent<DragInventory>().item = it;
                 }
+                //else
+                //{
+                //    var obj = GameObject.FindGameObjectsWithTag("Item"); //находим все объекты по тегу
+                //    Debug.Log("Кол-во объектов "+ obj.Length);
+
+                //    for (int y = 0; y < obj.Length; y ++)
+                //    {
+                //        obj[i].gameObject.tag = "NoItem";
+                //    }                        
+                //}
                 else break;   
                    
             }
         }
+    }
+
+    void Use(DragInventory drag) //использование предмета
+    {
+        Item it = drag.item;
+        if(drag.item.type == "FirstAid")
+        {
+            //прибавляем здоровье
+            player.Heal(100);
+            Debug.Log("использовалди аптечку");
+            // Remove(drag);
+            //Destroy(drag.gameObject);
+        }
+        else if(drag.item.type == "Hand")
+        {
+            HandItem myItem = Instantiate<GameObject>(Resources.Load<GameObject>(drag.item.prefab)).GetComponent<HandItem>();
+            player.AddHand(myItem);
+        }
+        else if(drag.item.type == "Board")
+        {
+            Debug.Log("выкидываем дрова");
+            Remove(drag);
+        }
+        list.Remove(drag.item);//удаляем из рюкзака
+        Destroy(drag.gameObject); 
+    }
+
+    void Remove(DragInventory drag) //удаляем из инвенторя
+    {
+        Item it = drag.item;
+
+        //добавляем объект в мир
+        GameObject newO = Instantiate<GameObject>(Resources.Load<GameObject>(it.prefab));
+
+        //куда создаём                                 (вперёд на метр)      (вверх на метр)
+        newO.transform.position = transform.position + transform.forward * 2 + transform.up/2;
+
+        //удаляем объект из инвенторя
+        Destroy(drag.gameObject);
+
+        //удаляем объект из списка
+        list.Remove(it);
     }
 }

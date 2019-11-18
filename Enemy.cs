@@ -6,6 +6,10 @@ using DG.Tweening;
 
 public class Enemy : MonoBehaviour
 {
+
+    [SerializeField]
+    private Animator animator;
+
     private NavMeshAgent agent;
 
     [SerializeField]
@@ -52,7 +56,7 @@ public class Enemy : MonoBehaviour
 
     private const float RESPAWN_TIME = 20f;
 
-    private Tween respawnTween; //твин для респавна
+   // private Tween respawnTween; //твин для респавна
     private Vector3 lastMovePosition;//последняя точка куда хотел идти враг
 
     private bool isAngry;
@@ -138,6 +142,7 @@ public class Enemy : MonoBehaviour
     {
         if(Vector3.Distance(lastMovePosition, transform.position) < MOVE_EPSILON)
         {
+            animator.SetTrigger("Walk");
             //дошли до цели и задаём новую точку
             lastMovePosition = GetRandomPassivePoint();
             agent.SetDestination(lastMovePosition);
@@ -156,21 +161,23 @@ public class Enemy : MonoBehaviour
     //появление врага после того, как герой ушёл
     private void RespawnDelay() // задержка возрождения, типа когда герой уйдёт из зоны врагов, тогда возродятся
     {
-        if(respawnTween != null)
-        {
-            respawnTween.Kill();
-        }
-        respawnTween = DOVirtual.DelayedCall(RESPAWN_TIME, ()=> {
+        //if(respawnTween != null)
+        //{
+        //    respawnTween.Kill();
+        //}
+        //respawnTween = DOVirtual.DelayedCall(RESPAWN_TIME, ()=> {
+
+        
             if (Vector3.Distance(player.transform.position, respawnTransform.position) > pasiveMoveRadius) //если вышел герой из зоны врага
             {
-                Respawn();
+                 Invoke("Respawn", 15f);
             }
             else
             {
                 RespawnDelay();
             }
 
-        });
+       // });
     }
 
     private void Respawn()
@@ -206,12 +213,14 @@ public class Enemy : MonoBehaviour
             isAttacking = false;
             attackTween.Kill();
         }
+        animator.SetTrigger("Walk");
     }
 
     private void Attack()
     {
         if(isAttacking)
         {
+            animator.SetTrigger("Attack");
             player.GetDamage(weapon.GetDamage);
 
             if(attackTween != null && attackTween.IsActive()) //убиваем предыдущий твин, предыдущ атаку
@@ -245,10 +254,11 @@ public class Enemy : MonoBehaviour
     private void Die()
     {
         isDead = true;
+        animator.SetTrigger("Die");
         attackTween.Kill();
         gameObject.SetActive(false);
 
-        if(OnDeath != null) //если кто то подписан на событие OnDeath
+        if (OnDeath != null) //если кто то подписан на событие OnDeath
         {
             OnDeath();
         }

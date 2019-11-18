@@ -28,6 +28,6 @@ public class KillCounter : MonoBehaviour
 
     private void OnDisable() //отписываемся
     {
-         Enemy.OnDeath -= OnEnemyDeath;
+         Enemy.OnDeath += OnEnemyDeath;
     }
 }

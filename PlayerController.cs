@@ -12,43 +12,27 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private Animator animator;
     private CharacterController characterController; //персонаж
-
     private float gravity = 20f; // гравитация
     private Vector3 moveDirection = Vector3.zero;  // вектор движения
-
     public float speed = 5f;
     public float rotationSpeed = 240f; // скорость поворота
-
     private const float PLAYER_DONT_MOVE_SPEED = 0.01f;
-
     private bool isRunning = false;
-
     [SerializeField]
     private ImageBar healtBar; //здоровье
-
     private Collider _collider; // коллайдер игрока
-
     public static System.Action OnDeath;
-
     private float superAttackTime;
     private float attackTime;
-
     private float health; // текущие жизни
-
     [SerializeField]
     private float maxHealth; // max жизней
-
     [SerializeField]
     private BoxCollider weaponCollider;
-
     private bool isAttacking = false; // находится ли герой в состоянии атаки
-
     private const float SUPER_ATTACK_PROBABILITY = 0f; // вероятность супер атаки
-
     private Tween attackTween;
-
     private bool isDead = false; // умер герой или нет
-
     public bool IsDead
     {
         get
@@ -56,13 +40,13 @@ public class PlayerController : MonoBehaviour
             return isDead;
         }
     }
-
+    //[SerializeField]
+    //private GameObject swordTrail; //эффект при ударе битой, след в воздухе 
     [SerializeField]
-    private GameObject swordTrail; //эффект при ударе битой, след в воздухе
+    private ParticleSystem bloodParticle; //кровь
 
-    //кровь
-    [SerializeField]
-    private ParticleSystem bloodParticle;
+    public Transform rHand; //правая рука для оружия
+    private HandItem handItem;
 
 
     private void Awake()
@@ -82,12 +66,14 @@ public class PlayerController : MonoBehaviour
         weaponCollider.enabled = false; //что бы не активно оржие было когда игрок ничего не делает
         health = maxHealth;
 
-        swordTrail.SetActive(false);
+       // swordTrail.SetActive(false);
+
+        handItem = FindObjectOfType<HandItem>();
     }
 
     void Update()
     {
-        if(isDead)
+        if (isDead)
         {
             return;
         }
@@ -99,7 +85,7 @@ public class PlayerController : MonoBehaviour
     {
         float h = CrossPlatformInputManager.GetAxis("Horizontal");
         float v = CrossPlatformInputManager.GetAxis("Vertical");
-        
+
         //Узнаём, куда направлена камера в плоскости Z, и делаем направление персонажа в ту сторону, куда смотрит джойстик
         Vector3 camForwardDirection = Vector3.Scale(Camera.main.transform.forward,
             new Vector3(1, 0, 1)).normalized;
@@ -145,13 +131,13 @@ public class PlayerController : MonoBehaviour
         //узнаём длину вектора скорости, что бы красиво проиграть анимацию ходьбы и чтобы вовремя персонаж останавливался
         float horSpeed = horVelosity.magnitude; // скорость персонажа в игре
 
-        if(horSpeed > 0 && isRunning == false)
+        if (horSpeed > 0 && isRunning == false)
         {
-            
-            isRunning = true;           
+
+            isRunning = true;
             animator.SetTrigger("Run");
         }
-        if(horSpeed < PLAYER_DONT_MOVE_SPEED && isRunning == true)
+        if (horSpeed < PLAYER_DONT_MOVE_SPEED && isRunning == true)
         {
             isRunning = false;
             animator.SetTrigger("Idle");
@@ -160,17 +146,17 @@ public class PlayerController : MonoBehaviour
 
     public void Attack()
     {
-        if(!isAttacking && !isDead) // если нет атаки и если герой живой, то атакуем
+        if (!isAttacking && !isDead) // если нет атаки и если герой живой, то атакуем
         {
             isAttacking = true;
             weaponCollider.enabled = true; // вкулючаем коллайдер оружия
-            //animator.SetTrigger("Attack");
+            animator.SetTrigger("Attack");
 
-            swordTrail.SetActive(true);
+            // swordTrail.SetActive(true);
 
             // что бы знать, какую анимацию будем брать
             string attackAnimation = Random.value > SUPER_ATTACK_PROBABILITY ?
-                                         AttackType.Attack.ToString(): AttackType.SuperAttack.ToString();
+                                         AttackType.Attack.ToString() : AttackType.SuperAttack.ToString();
 
             animator.SetTrigger(attackAnimation);
 
@@ -180,20 +166,20 @@ public class PlayerController : MonoBehaviour
             //запускаем Tween
 
             attackTween = DOVirtual.DelayedCall(thisAttackTime, delegate
-            {
-                isAttacking = false;
-                weaponCollider.enabled = false;
+           {
+               isAttacking = false;
+               weaponCollider.enabled = false;
 
-                swordTrail.SetActive(false);
+              // swordTrail.SetActive(false);
 
-                animator.SetTrigger("Idle");
-            });
+               animator.SetTrigger("Idle");
+           });
         }
     }
-    private void OnDisable()
-    {
-        attackTween.Kill(); //убираем Tween
-    }
+    //private void OnDisable()
+    //{
+    //    attackTween.Kill(); //убираем Tween
+    //}
 
     public void GetDamage(float value) // получение урона
     {
@@ -201,11 +187,12 @@ public class PlayerController : MonoBehaviour
 
         healtBar.SetValue(health, maxHealth);
 
-        if(health <= 0)
+        if (health <= 0)
         {
             Die();
         }
-
+        Debug.Log("Здоровье");
+        Debug.Log(health);
         BloodsFX();
     }
 
@@ -216,7 +203,7 @@ public class PlayerController : MonoBehaviour
         healtBar.SetValue(health, maxHealth);
     }
 
-    private void Die()
+    public void Die()
     {
         isDead = true;
 
@@ -226,7 +213,7 @@ public class PlayerController : MonoBehaviour
 
         animator.SetTrigger("Die");
 
-        if (OnDeath != null) 
+        if (OnDeath != null)
         {
             OnDeath();  // объявление, что герой умер
         }
@@ -236,6 +223,24 @@ public class PlayerController : MonoBehaviour
     {
         bloodParticle.Stop();
         bloodParticle.Play();
+    }
+
+    public void AddHand(HandItem it)
+    {
+        //если есть уже что то в руке
+        if (handItem != null)
+        {
+            handItem.transform.SetParent(null); //типа выбрасываем
+            handItem.transform.position = transform.position + transform.forward + transform.up / 2;
+            handItem.gameObject.AddComponent<Rigidbody>();
+          
+        }
+        it.transform.SetParent(rHand); //делаем родитель - это будет рука
+        it.transform.localPosition = it.position; // позиционируем
+        it.transform.localRotation = Quaternion.Euler(it.rotation);
+        Destroy(it.GetComponent<Rigidbody>()); //удаляем Rigitbody, что бы не выпадывал
+
+        handItem = it;
     }
 }
 

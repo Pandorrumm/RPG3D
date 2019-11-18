@@ -16,7 +16,7 @@ public class FirstAid : MonoBehaviour  //первая помощь (аптечк
 
     public void Spawn(Vector3 pos)
     {
-        transform.position = pos;
+        transform.position = pos + transform.up*3 + transform.forward;
         gameObject.SetActive(true);
     }
 
